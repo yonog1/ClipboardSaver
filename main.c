@@ -1,5 +1,8 @@
 #include <windows.h>
 #include <stdio.h>
+#include <winuser.h>
+#include <stdbool.h>
+#include <time.h>
 
 int SaveClipboardImageToFile(const char *filename)
 {
@@ -101,10 +104,30 @@ int SaveClipboardImageToFile(const char *filename)
 
 int main()
 {
-    if (SaveClipboardImageToFile("C:\\tmp\\clipboard_image1.bmp") != 0)
+    DWORD last = GetClipboardSequenceNumber();
+
+    while (true)
     {
-        fprintf(stderr, "Failed to save clipboard image to file.\n");
-        return 1;
+        Sleep(500);                                // Sleep for 0.5 second
+        DWORD curr = GetClipboardSequenceNumber(); // Get last 'copy' ID
+        if (curr != last)                          // Check if ID changed aka new copy action
+        {
+            char filename[MAX_PATH];
+            time_t rawtime;
+            struct tm *timeinfo;
+
+            // Get the current system time in seconds since the epoch and store it in 'rawtime'
+            time(&rawtime);
+
+            // Convert the raw time data into a local time structure and store it in 'timeinfo'
+            timeinfo = localtime(&rawtime);
+
+            // Format the current time using the specified format and store it in 'filename'
+            strftime(filename, MAX_PATH, "C:\\tmp\\clipboard_image_%Y%m%d_%H%M%S.bmp", timeinfo);
+
+            SaveClipboardImageToFile(filename);
+            last = curr; // Update last after processing the clipboard change
+        }
     }
 
     return 0;
